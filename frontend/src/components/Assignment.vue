@@ -115,13 +115,7 @@
 						:readonly="!canModifyAssignment"
 					/>
 				</div>
-				<div v-if="true">
-					<div class="text-sm mb-4">
-						{{ __('Write your answer here') }}
-					</div>
-					<FormControl />
-				</div>
-				<!-- <div v-else>
+				<div v-else>
 					<div class="text-sm mb-4">
 						{{ __('Write your answer here') }}
 					</div>
@@ -132,7 +126,7 @@
 						:fixedMenu="true"
 						editorClass="prose-sm max-w-none border-b border-x bg-surface-gray-2 rounded-b-md py-1 px-2 min-h-[7rem]"
 					/>
-				</div> -->
+				</div>
 
 				<div
 					v-if="
@@ -192,7 +186,7 @@ import {
 	createDocumentResource,
 	FileUploader,
 	FormControl,
-	TextEditor,
+	TextEditor
 } from 'frappe-ui'
 import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { FileText, X } from 'lucide-vue-next'

@@ -85,6 +85,7 @@ declare module 'vue' {
     StudentHeatmap: typeof import('./src/components/StudentHeatmap.vue')['default']
     StudentModal: typeof import('./src/components/Modals/StudentModal.vue')['default']
     Tags: typeof import('./src/components/Tags.vue')['default']
+    TextEditor: typeof import('./src/components/TextEditor.vue')['default']
     UnsplashImageBrowser: typeof import('./src/components/UnsplashImageBrowser.vue')['default']
     UpcomingEvaluations: typeof import('./src/components/UpcomingEvaluations.vue')['default']
     UploadPlugin: typeof import('./src/components/UploadPlugin.vue')['default']

@@ -5,7 +5,7 @@ import AssignmentBlock from '@/components/AssignmentBlock.vue'
 import translationPlugin from '../translation'
 import { usersStore } from '@/stores/user'
 import router from '../router'
-import { FrappeUI, setConfig, frappeRequest, pageMetaPlugin } from 'frappe-ui'
+import { TextEditor } from 'frappe-ui'
 
 export class Assignment {
 	constructor({ data, api, readOnly }) {
@@ -47,11 +47,11 @@ export class Assignment {
 			const app = createApp(AssignmentBlock, {
 				assignmentID: assignment,
 			})
-			app.use(FrappeUI)
-			setConfig('resourceFetcher', frappeRequest)
+			app.config.errorHandler = (err, vm, info) => {
+				console.error(err, vm, info)
+			}
 			app.use(translationPlugin)
 			app.use(router)
-			app.use(pageMetaPlugin)
 			const { userResource } = usersStore()
 			app.provide('$user', userResource)
 			app.mount(this.wrapper)

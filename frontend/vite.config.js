@@ -40,6 +40,10 @@ export default defineConfig({
 			'engine.io-client',
 			'tailwind.config.js',
 			'highlight.js',
+			'prosemirror-state',
+			'prosemirror-transform',
+			'prosemirror-model',
+			'prosemirror-view'
 		],
 	},
 })
