@@ -22,6 +22,7 @@ app.use(pageMetaPlugin)
 app.provide('$dayjs', dayjs)
 app.provide('$socket', initSocket())
 app.mount('#app')
+console.log(app)
 
 const { userResource, allUsers } = usersStore()
 app.provide('$user', userResource)

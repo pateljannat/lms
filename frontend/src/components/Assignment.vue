@@ -119,13 +119,13 @@
 					<div class="text-sm mb-4">
 						{{ __('Write your answer here') }}
 					</div>
-					<TextEditor
+					<!-- <TextEditor
 						:content="answer"
 						@change="(val) => (answer = val)"
 						:editable="true"
 						:fixedMenu="true"
 						editorClass="prose-sm max-w-none border-b border-x bg-surface-gray-2 rounded-b-md py-1 px-2 min-h-[7rem]"
-					/>
+					/> -->
 				</div>
 
 				<div
@@ -159,7 +159,7 @@
 						<div class="text-sm text-ink-gray-5 mb-1">
 							{{ __('Comments') }}
 						</div>
-						<TextEditor
+						<!-- <TextEditor
 							:content="comments"
 							@change="
 								(val) => {
@@ -170,7 +170,7 @@
 							:editable="true"
 							:fixedMenu="true"
 							editorClass="prose-sm max-w-none border-b border-x bg-surface-gray-2 rounded-b-md py-1 px-2 min-h-[7rem]"
-						/>
+						/> -->
 					</div>
 				</div>
 			</div>
@@ -186,7 +186,6 @@ import {
 	createDocumentResource,
 	FileUploader,
 	FormControl,
-	TextEditor
 } from 'frappe-ui'
 import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { FileText, X } from 'lucide-vue-next'

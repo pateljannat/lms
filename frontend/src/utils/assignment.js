@@ -43,6 +43,7 @@ export class Assignment {
 	}
 
 	renderAssignment(assignment) {
+		console.log("render assignment")
 		if (this.readOnly) {
 			const app = createApp(AssignmentBlock, {
 				assignmentID: assignment,
@@ -55,6 +56,7 @@ export class Assignment {
 			const { userResource } = usersStore()
 			app.provide('$user', userResource)
 			app.mount(this.wrapper)
+			console.log(app)
 			return
 		}
 		this.wrapper.innerHTML = `<div class='border rounded-md p-10 text-center bg-surface-menu-bar mb-2'>
