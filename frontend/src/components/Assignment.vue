@@ -126,7 +126,9 @@
 						{{ __('Write your answer here') }}
 					</div>
 					<TextEditor
+						ref="textEditor"
 						:content="answer"
+						:extensions="[CustomImageExtension]"
 						@change="(val) => (answer = val)"
 						:editable="true"
 						:fixedMenu="true"
@@ -200,6 +202,8 @@ import { computed, inject, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { FileText, X } from 'lucide-vue-next'
 import { getFileSize } from '@/utils'
 import { useRouter } from 'vue-router'
+import { ImageExtension } from 'frappe-ui/src/components/TextEditor/extensions/image'
+import { useFileUpload } from 'frappe-ui/src/utils/useFileUpload'
 
 const submissionFile = ref(null)
 const answer = ref(null)
@@ -207,6 +211,7 @@ const comments = ref(null)
 const router = useRouter()
 const user = inject('$user')
 const isDirty = ref(false)
+const textEditor = ref(null)
 
 const props = defineProps({
 	assignmentID: {
@@ -225,6 +230,9 @@ const props = defineProps({
 
 onMounted(() => {
 	window.addEventListener('keydown', keyboardShortcut)
+	setTimeout(() => {
+		console.log(Object.keys(textEditor.value)['editor'])
+	}, 1000)
 })
 
 const keyboardShortcut = (e) => {
@@ -444,6 +452,24 @@ const canGradeSubmission = computed(() => {
 		props.submissionName != 'new' &&
 		router.currentRoute.value.name == 'AssignmentSubmission'
 	)
+})
+
+const extensions = computed(() => {
+	return [CustomImageExtension]
+})
+
+const uploadFunction = async (file) => {
+	console.log('Uploading file:', file)
+	const fileUpload = useFileUpload()
+	const fileDoc = await fileUpload.upload(file, {
+		private: true,
+	})
+	return { src: fileDoc.file_url }
+}
+
+const CustomImageExtension = ImageExtension.extend({
+	name: 'image',
+	addOptions: () => ({ uploadFunction }),
 })
 
 const canModifyAssignment = computed(() => {

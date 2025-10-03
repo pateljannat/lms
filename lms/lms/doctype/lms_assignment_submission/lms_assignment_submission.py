@@ -13,6 +13,7 @@ class LMSAssignmentSubmission(Document):
 		self.validate_duplicates()
 		self.validate_url()
 		self.validate_status()
+		self.validate_files_in_text()
 
 	def validate_duplicates(self):
 		if frappe.db.exists(
@@ -33,6 +34,41 @@ class LMSAssignmentSubmission(Document):
 			doc_before_save = self.get_doc_before_save()
 			if doc_before_save.status != self.status or doc_before_save.comments != self.comments:
 				self.trigger_update_notification()
+
+	def validate_files_in_text(self):
+		if self.type == "Text" and self.answer:
+			print(self.answer)
+			from bs4 import BeautifulSoup
+
+			soup = BeautifulSoup(self.answer, "html.parser")
+
+			images = soup.find_all("img")
+			print(images[0].get("src"))
+			self.validate_source(images)
+
+			""" videos = soup.find_all("video")
+			self.validate_source(videos) """
+
+			print(self.answer)
+
+	def validate_source(self, medias):
+		for media in medias:
+			print(media, type(media))
+			src = media.get("src")
+			if "private" not in src:
+				print(src)
+				file_name = frappe.db.get_value("File", {"file_url": src}, "name")
+				print(file_name)
+				frappe.db.set_value("File", file_name, "is_private", 1)
+				""" frappe.db.set_value(
+					"File",
+					{"file_url": src},
+					"is_private",
+					1,
+				)
+				new_src = src.replace("/files/", "/private/files/")
+				self.answer = self.answer.replace(src, new_src)
+ """
 
 	def trigger_update_notification(self):
 		notification = frappe._dict(
