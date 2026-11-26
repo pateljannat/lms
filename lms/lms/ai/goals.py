@@ -82,6 +82,12 @@ def key_idea_count(goal) -> int:
 	return min(max(cint(goal.key_ideas) or DEFAULT_KEY_IDEAS, 3), 12)
 
 
+def cites_sources(goal) -> bool:
+	"""A compliance skill asks people to follow a written policy, so Lumi names the source of
+	each rule. Anywhere else a citation is noise: the learner knows Lumi, not the documents."""
+	return bool(goal.proof_acknowledgement or goal.proof_sign_off or goal.recurrence == "Yearly")
+
+
 def has_material(goal_name: str) -> bool:
 	knowledge_base = frappe.db.get_value("LMS Goal", goal_name, "knowledge_base")
 	return bool(
@@ -336,6 +342,7 @@ def learner_state(assignment_name: str) -> dict:
 			"minutes": goal.minutes,
 			"tutor_first": goal.tutor_first,
 			"documents": documents(goal),
+			"cite_sources": cites_sources(goal),
 			"due_date": goal.due_date,
 			"proof_mastery": goal.proof_mastery,
 			"mastery_threshold": goal.mastery_threshold,
@@ -534,6 +541,7 @@ def _open_lesson(assignment, activity, content: dict):
 				).strip(),
 				"they_need_to_be_able_to": goal.learner_outcome or goal.title,
 				"has_material": has_material(goal.name),
+				"cite_sources": cites_sources(goal),
 				"their_situations": situations.recall(assignment),
 				"key_ideas": [
 					{

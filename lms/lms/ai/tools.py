@@ -366,6 +366,9 @@ def show_moment(moment: Moment, *, ctx: ToolContext) -> str:
 	options, build something from pieces, sort items into buckets, match pairs, fill the blanks,
 	or reply in their own words. Their answer arrives as their next message.
 
+	Call it once per turn, on its own: never several calls in one reply. The next exercise comes
+	after they answer this one.
+
 	Any person in it is Brannoc, Quilla, Fenwick, Odalie or Tavish, never any other name; a role
 	with no cast fit stays nameless, such as a contractor or your manager."""
 	if not _exercises_agreed(ctx.session_id):
@@ -386,7 +389,8 @@ def show_moment(moment: Moment, *, ctx: ToolContext) -> str:
 	if not _claim_turn_moment(ctx.session_id):
 		# A second exercise in one turn would replace the first on screen before it is answered.
 		return NOT_SHOWN + _(
-			"An exercise is already on screen this turn. Write nothing more and wait for their answer."
+			"Not shown: an exercise is already on screen this turn, and only one fits in a turn. "
+			"Write nothing more and wait for their answer. Next time, call show_moment once."
 		)
 	return _("Shown to the learner. Your turn is over: write nothing more.")
 
@@ -426,7 +430,7 @@ def begin_exercises(*, ctx: ToolContext) -> str:
 	"""Record that the learner said yes to trying exercises, after you asked them. Call it once,
 	right after their yes and before the first show_moment; never before you have asked."""
 	frappe.cache.set_value(_agreed_key(ctx.session_id), 1, expires_in_sec=AGREED_TTL)
-	return _("Noted. Show the first moment now.")
+	return _("Noted. Show one moment now, the first of them.")
 
 
 @tool

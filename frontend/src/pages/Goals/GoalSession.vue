@@ -339,7 +339,7 @@
 							/>
 						</div>
 						<div class="text-p-xs text-ink-gray-6">
-							{{ __('Answers come only from the material for this skill') }}
+							{{ __('Answers stick to what this skill covers') }}
 						</div>
 					</div>
 				</div>
@@ -350,7 +350,7 @@
 					:placeholder="__('Ask {0} a question', [TUTOR_NAME])"
 					:empty-text="
 						__(
-							'Stuck on something? Ask in your own words, and I\'ll answer straight from the material.'
+							'Stuck on something? Ask in your own words and I\'ll help you work it out.'
 						)
 					"
 					:quick-replies="tutorAsked ? [] : tutorStarters"
@@ -455,6 +455,10 @@ provide('goalSourceLink', (source: string) =>
 		{ assignment: assignment.value || '' },
 		state.value?.goal.documents || []
 	)(source)
+)
+provide(
+	'goalCitations',
+	computed(() => !!state.value?.goal.cite_sources)
 )
 const memberName = computed(() => user?.data?.full_name || '')
 

@@ -24,8 +24,7 @@
 					<div class="truncate text-p-xs text-ink-gray-6">
 						{{
 							[
-								content.character_role,
-								temperament || __('role-play'),
+								content.character_role || __('role-play'),
 								stage !== 'chat'
 									? stepLabel
 									: points.length
@@ -34,7 +33,10 @@
 							]
 								.filter(Boolean)
 								.join(' · ')
-						}}
+						}}<!-- Wide screens show the trait in the side panel; a phone has no panel. -->
+						<span v-if="temperament" class="lg:hidden">
+							· {{ temperament }}</span
+						>
 					</div>
 				</div>
 				<ProgressTiles
@@ -107,6 +109,12 @@
 									{{ criterion }}
 								</li>
 							</ul>
+						</div>
+						<div v-if="temperament" class="lg:hidden">
+							<div class="text-p-xs text-ink-gray-6">
+								{{ __('What {0} is like').format(characterName) }}
+							</div>
+							<p class="mt-1 text-p-sm text-ink-gray-8">{{ temperament }}</p>
 						</div>
 						<div
 							class="flex flex-col gap-4 border-t border-outline-gray-1 pt-5 sm:flex-row sm:items-center"
@@ -223,6 +231,12 @@
 								{{ criterion }}
 							</li>
 						</ul>
+					</div>
+					<div v-if="temperament">
+						<div class="text-p-xs text-ink-gray-6">
+							{{ __('What {0} is like').format(characterName) }}
+						</div>
+						<p class="mt-1 text-p-sm text-ink-gray-8">{{ temperament }}</p>
 					</div>
 				</aside>
 			</div>

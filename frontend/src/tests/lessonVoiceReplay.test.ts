@@ -32,7 +32,11 @@ const flow = vi.hoisted(() => ({
 	shown: {} as Record<string, string>,
 	stalled: false,
 }))
-const voice = vi.hoisted(() => ({ said: [] as string[], listen: null as null | ((text: string) => void) }))
+const voice = vi.hoisted(() => ({
+	said: [] as string[],
+	listen: null as null | ((text: string) => void),
+	mode: 'speak' as 'speak' | 'type',
+}))
 
 vi.mock('frappe-ui', () => {
 	const stub = (name: string) =>
@@ -86,7 +90,7 @@ vi.mock('@/composables/useSpeech', async () => {
 vi.mock('@/composables/useVoice', async () => {
 	const { ref } = await import('vue')
 	return {
-		preferredMode: () => 'speak',
+		preferredMode: () => voice.mode,
 		rememberMode: vi.fn(),
 		setTranscribeSession: vi.fn(),
 		useVoice: () => ({
@@ -128,6 +132,14 @@ const VoiceStage = defineComponent({
 	props: ['moment', 'result'],
 	emits: ['answer'],
 	setup: (props) => () => h('div', { 'data-moment': props.moment?.id ?? '' }),
+})
+
+// In the typed chat each exercise is a block in the transcript.
+const MomentBlock = defineComponent({
+	name: 'MomentBlock',
+	props: ['id'],
+	emits: ['answer'],
+	setup: (props) => () => h('div', { 'data-block': props.id }),
 })
 
 const exercise = (id: string, prompt: string): Moment => ({
@@ -226,7 +238,7 @@ async function openLesson(opening = OPENING, shown: Record<string, string> = {})
 			runMethod: 'lms.lms.ai.api.lesson_reply',
 		},
 		global: {
-			stubs: { VoiceStage },
+			stubs: { VoiceStage, MomentBlock },
 			mocks: { __: (globalThis as any).__ },
 			provide: { $socket: socket },
 		},
@@ -258,6 +270,48 @@ afterEach(() => {
 	flow.handlers = {}
 	voice.said = []
 	voice.listen = null
+	voice.mode = 'speak'
+	vi.useRealTimers()
+})
+
+describe('a typed lesson', () => {
+	it('shows the feedback on an answer first and the next exercise 7 seconds later', async () => {
+		voice.mode = 'type'
+		// The typed transcript scrolls to the newest message; jsdom has no scrolling.
+		Element.prototype.scrollTo = () => {}
+		vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+		const first = exercise('m1', 'Pick the safe lift.')
+		row({ type: 'user_message', content: 'BRIEF {}' })
+		row({
+			type: 'assistant_message',
+			content: [
+				{ type: 'text', text: 'Try this one.' },
+				{ type: 'tool_call', id: 'm1', name: 'lms__show_moment', arguments: { moment: first.moment } },
+			],
+		})
+		row({ type: 'tool_result', tool_call_id: 'm1', content: 'Shown to the learner.' })
+		const wrapper = await openLesson('Where do you work?')
+		// An exercise from the saved history is never held back.
+		expect(wrapper.find('[data-block="m1"]').exists()).toBe(true)
+
+		wrapper.findComponent(MomentBlock).vm.$emit('answer', { id: 'm1', correct: true })
+		await flushPromises()
+		await serverTurn({
+			learner: null,
+			replies: [{ text: 'Good call, that lift keeps your back straight.', moments: [exercise('m2', 'Tap the hazards.')] }],
+		})
+		expect(wrapper.text()).toContain('Good call, that lift keeps your back straight.')
+		expect(wrapper.find('[data-block="m2"]').exists()).toBe(false)
+		expect(wrapper.text()).toContain('Your next exercise is on its way')
+
+		vi.advanceTimersByTime(6900)
+		await flushPromises()
+		expect(wrapper.find('[data-block="m2"]').exists()).toBe(false)
+		vi.advanceTimersByTime(100)
+		await flushPromises()
+		expect(wrapper.find('[data-block="m2"]').exists()).toBe(true)
+		expect(wrapper.text()).not.toContain('Your next exercise is on its way')
+	})
 })
 
 describe('a spoken lesson, replayed', () => {

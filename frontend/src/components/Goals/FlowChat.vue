@@ -177,7 +177,7 @@
 		<CitationPreview :container="scroller" />
 		<div v-if="!readOnly" class="w-full px-4 pb-4 sm:px-6 sm:pb-5">
 			<div
-				v-if="running && !partial && mode !== 'speak'"
+				v-if="((running && !partial) || holdingNext) && mode !== 'speak'"
 				class="flex items-center gap-2 px-1 pb-2 text-p-xs text-ink-gray-6"
 				role="status"
 			>
@@ -283,30 +283,48 @@
 							</p>
 							<ErrorMessage :message="voiceTools.error.value" />
 						</div>
-						<Textarea
-							v-else
-							v-model="draft"
-							variant="ghost"
-							class="resize-none"
-							:rows="1"
-							:placeholder="composerPlaceholder"
-							:disabled="disabled"
-							:aria-label="placeholder"
-							@keydown="onComposerKey"
-						/>
-						<div class="flex items-center gap-2">
-							<TabButtons
-								v-if="voice && voiceTools.canListen"
-								v-model="mode"
-								:options="modes"
+						<div v-else class="flex items-end gap-2">
+							<Textarea
+								v-model="draft"
+								variant="ghost"
+								class="flex-1 resize-none"
+								:rows="1"
+								:placeholder="composerPlaceholder"
+								:disabled="disabled"
+								:aria-label="placeholder"
+								@keydown="onComposerKey"
 							/>
+							<!-- mb-1 puts the button's centre on the first line of text, and keeps it
+							     at the bottom as the text grows. -->
+							<template v-if="!modeSwitch">
+								<!-- On a phone the placeholder needs the room, so Send is an icon there. -->
+								<Button
+									class="mb-1 sm:hidden"
+									variant="solid"
+									icon="lucide-send"
+									:aria-label="__('Send')"
+									:disabled="disabled || !draft.trim() || running"
+									@click="submit"
+								/>
+								<Button
+									class="mb-1 hidden sm:inline-flex"
+									variant="solid"
+									:label="__('Send')"
+									icon-right="lucide-send"
+									:disabled="disabled || !draft.trim() || running"
+									@click="submit"
+								/>
+							</template>
+						</div>
+						<div v-if="modeSwitch" class="flex items-center gap-2">
+							<TabButtons v-model="mode" :options="modes" />
 							<span class="flex-1" />
 							<Button
 								v-if="mode !== 'speak'"
 								variant="solid"
+								:label="__('Send')"
+								icon-right="lucide-send"
 								:disabled="disabled || !draft.trim() || running"
-								:aria-label="__('Send')"
-								icon="lucide-send"
 								@click="submit"
 							/>
 						</div>
@@ -318,7 +336,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, nextTick, ref, toRef, watch } from 'vue'
+import {
+	computed,
+	inject,
+	nextTick,
+	onBeforeUnmount,
+	ref,
+	toRef,
+	unref,
+	watch,
+	type Ref,
+} from 'vue'
 import {
 	Avatar,
 	Button,
@@ -327,6 +355,7 @@ import {
 	TabButtons,
 	Textarea,
 } from 'frappe-ui'
+import { useMediaQuery } from '@vueuse/core'
 // @ts-expect-error markdown-it ships no type declarations
 import MarkdownIt from 'markdown-it'
 import {
@@ -426,7 +455,13 @@ const sourceLink = inject<((source: string) => string | null) | null>(
 	'goalSourceLink',
 	null
 )
-const render = (text: string): string => {
+// Citations show only on a compliance skill. Elsewhere the learner knows Lumi, not the
+// documents, so a "[Guide title]" left in a reply is taken out.
+const citations = inject<Ref<boolean> | boolean>('goalCitations', true)
+const uncited = (text: string): string =>
+	unref(citations) ? text : text.replace(/[ \t]*\[[^[\]\n]{3,160}\](?!\()/g, '')
+const render = (rawText: string): string => {
+	const text = uncited(rawText || '')
 	const linked = sourceLink
 		? (text || '').replace(
 				/\[([^[\]]+? · p\.\d+(?:[-–]\d+)?(?:,\s*p\.\d+(?:[-–]\d+)?)*)\](?!\()/g,
@@ -474,11 +509,44 @@ const shownText = computed(() => {
 	}
 	return shown
 })
+// After an answer, the feedback on it gets the screen to itself for a while: the next
+// exercise waits, so the learner reads why before they are asked again. Only the typed chat
+// holds it; the voice stage already waits for the voice to finish.
+const NEXT_EXERCISE_WAIT_MS = 7000
+const heldMoments = ref<Set<string>>(new Set())
+const seenMoments = new Set<string>()
+let afterAnswer = false
+const holdTimers: number[] = []
+watch(
+	() => savedMessages.value.flatMap((m) => m.moments.map((item) => item.id)),
+	(ids) => {
+		for (const id of ids) {
+			if (seenMoments.has(id)) continue
+			seenMoments.add(id)
+			if (!primed.value || !afterAnswer || mode.value === 'speak') continue
+			heldMoments.value = new Set(heldMoments.value).add(id)
+			holdTimers.push(
+				window.setTimeout(() => {
+					const left = new Set(heldMoments.value)
+					left.delete(id)
+					heldMoments.value = left
+				}, NEXT_EXERCISE_WAIT_MS)
+			)
+		}
+	}
+)
+onBeforeUnmount(() => holdTimers.forEach((timer) => clearTimeout(timer)))
+const holdingNext = computed(() => heldMoments.value.size > 0)
 const messages = computed(() =>
 	savedMessages.value
 		.map((message) => {
 			const text = shownText.value.get(message.key) ?? message.text
-			return text === message.text ? message : { ...message, text }
+			const moments = holdingNext.value
+				? message.moments.filter((item) => !heldMoments.value.has(item.id))
+				: message.moments
+			return text === message.text && moments === message.moments
+				? message
+				: { ...message, text, moments }
 		})
 		.filter(
 			(message) =>
@@ -532,12 +600,16 @@ const userName = computed(() => user.data?.full_name || __('You'))
 const userImage = computed(() => user.data?.user_image)
 
 const waitingLabel = computed(() =>
-	activeTool.value
+	holdingNext.value && !(running.value && !partial.value)
+		? __('Your next exercise is on its way')
+		: activeTool.value
 		? toolLabel.value
 		: props.waitingText || __('{0} is typing', [props.assistantName])
 )
+// A phone has room for the short prompt only; the "/" hint would wrap onto a second line.
+const narrow = useMediaQuery('(max-width: 639px)')
 const composerPlaceholder = computed(() =>
-	props.commands.length
+	props.commands.length && !narrow.value
 		? __('{0}, or type / for commands', [props.placeholder])
 		: props.placeholder
 )
@@ -555,6 +627,8 @@ const mode = ref<VoiceMode>(
 		? 'speak'
 		: 'type'
 )
+// Type and Speak tabs, only where the voice can listen; without them the composer is one row.
+const modeSwitch = computed(() => props.voice && voiceTools.canListen)
 const modes = [
 	{ label: __('Type'), value: 'type' },
 	{ label: __('Speak'), value: 'speak' },
@@ -709,6 +783,7 @@ watch(mode, (value) => {
 // Every message from the learner starts a turn; what was said before it is never said again.
 // A keep-going nudge continues the same turn, so it goes straight out.
 const send = (text: string) => {
+	afterAnswer = text.startsWith(MOMENT_RESULT)
 	feed.newTurn(messages.value.map((message) => message.key))
 	timing.start()
 	return sendRaw(text)
@@ -887,7 +962,7 @@ const replay = (message: ChatMessage) => {
 
 // The first cited document in the message, opened at its page.
 const sourceOf = (message: ChatMessage): string | undefined => {
-	if (!sourceLink) return undefined
+	if (!sourceLink || !unref(citations)) return undefined
 	const cited = message.text.match(
 		/\[([^[\]]+? · p\.\d+(?:[-–]\d+)?(?:,\s*p\.\d+(?:[-–]\d+)?)*)\]/
 	)
