@@ -3,12 +3,12 @@
 	     own padding already add space, so the section pads only the rest. -->
 	<section
 		class="-mx-4 border-y border-outline-gray-1 px-4 pt-3 sm:-mx-6 sm:px-6"
-		:class="sources.length ? 'pb-2.5' : 'pb-4'"
+		:class="sources.length ? 'pb-3.5' : 'pb-4'"
 	>
 		<!-- Rows bring their own padding; plain text under the heading needs the gap. -->
 		<div
 			class="flex items-center gap-2"
-			:class="sources.length ? '-mb-1' : 'mb-1'"
+			:class="sources.length ? 'mb-1.5' : 'mb-1'"
 		>
 			<h3 class="flex-1 text-p-sm font-semibold text-ink-gray-7">
 				{{ __('Material') }}
@@ -45,16 +45,21 @@
 								icon: 'lucide-link',
 								onClick: () => (addingLink = true),
 							},
+							{
+								label: __('Find material for me'),
+								icon: 'lucide-search',
+								onClick: () => (finding = true),
+							},
 						]"
 					>
 						<Button
 							size="sm"
 							variant="subtle"
-							:tooltip="__('Add material')"
 							:aria-label="__('Add material')"
 							:loading="addSource.loading"
+							:label="__('Add')"
 						>
-							<template #icon>
+							<template #prefix>
 								<span class="lucide-plus size-4 text-ink-gray-7" />
 							</template>
 						</Button>
@@ -70,22 +75,33 @@
 			}}
 		</p>
 		<!-- A row is not clickable, so it gets no hover fill; hover only reveals Remove. -->
-		<ul v-else class="space-y-2">
-			<li v-for="source in sources" :key="source.title" class="group py-1">
-				<div class="flex min-h-6 items-center gap-2.5">
+		<ul v-else class="space-y-1">
+			<li v-for="source in sources" :key="source.title" class="group py-0.5">
+				<div class="flex items-center gap-2.5">
+					<!-- The tile's colour says what kind of material it is: page, course or file. -->
 					<span
-						class="size-4 shrink-0 text-ink-gray-6"
-						:class="
-							source.url
-								? 'lucide-globe'
-								: source.course
-								? 'lucide-book-open'
-								: 'lucide-file-text'
-						"
-					/>
-					<span class="min-w-0 flex-1 truncate text-p-sm text-ink-gray-8">
-						{{ source.title }}
+						class="flex size-8 shrink-0 items-center justify-center rounded-6"
+						:class="kindOf(source).tile"
+						aria-hidden="true"
+					>
+						<span class="size-4" :class="kindOf(source).icon" />
 					</span>
+					<div class="min-w-0 flex-1">
+						<div class="truncate text-p-sm text-ink-gray-8">
+							{{ source.title }}
+						</div>
+						<!-- What it is and how much was read, under the name, so the row's end stays free. -->
+						<div
+							class="text-p-xs"
+							:class="
+								source.status === 'Failed'
+									? 'text-ink-red-6'
+									: 'text-ink-gray-6'
+							"
+						>
+							{{ statusText(source) }}
+						</div>
+					</div>
 					<LoadingIndicator
 						v-if="source.status === 'Reading'"
 						class="size-3.5 shrink-0"
@@ -121,18 +137,9 @@
 						</template>
 					</Button>
 				</div>
-				<!-- What it is and how much was read, under the name, so the row's end stays free. -->
-				<div
-					class="ms-[1.625rem] mt-0.5 text-p-xs"
-					:class="
-						source.status === 'Failed' ? 'text-ink-red-6' : 'text-ink-gray-6'
-					"
-				>
-					{{ statusText(source) }}
-				</div>
 				<Progress
 					v-if="source.status === 'Reading' && source.total"
-					class="ms-[1.625rem] mt-1.5"
+					class="ms-[2.625rem] mt-1.5"
 					size="sm"
 					:value="Math.round((source.page / source.total) * 100)"
 				/>
@@ -154,6 +161,12 @@
 			@added="(sources) => emit('changed', sources as Source[])"
 			@close="addingLink = false"
 		/>
+		<FindMaterialDialog
+			v-if="finding"
+			:goal="goal"
+			@added="(sources) => emit('changed', sources as Source[])"
+			@close="finding = false"
+		/>
 	</section>
 </template>
 
@@ -170,6 +183,7 @@ import {
 } from 'frappe-ui'
 import AddCourseDialog from '@/components/Goals/AddCourseDialog.vue'
 import AddLinkDialog from '@/components/Goals/AddLinkDialog.vue'
+import FindMaterialDialog from '@/components/Goals/FindMaterialDialog.vue'
 import { createDialog } from '@/utils/dialogs'
 
 interface Source {
@@ -209,6 +223,7 @@ const addSource = createResource({
 
 const addingCourse = ref(false)
 const addingLink = ref(false)
+const finding = ref(false)
 const addUrl = createResource({
 	url: 'lms.lms.ai.api.add_url',
 	onSuccess: (sources: Source[]) => emit('changed', sources),
@@ -273,6 +288,21 @@ const captionsNote = (source: Source) => {
 	return count === 1
 		? __('1 video could not be read')
 		: __('{0} videos could not be read').format(count)
+}
+
+// Web pages blue, courses green, uploaded files amber, so each kind reads at a glance.
+const kindOf = (source: Source) => {
+	if (source.url)
+		return { tile: 'bg-surface-blue-2', icon: 'lucide-globe text-ink-blue-7' }
+	if (source.course)
+		return {
+			tile: 'bg-surface-green-2',
+			icon: 'lucide-book-open text-ink-green-7',
+		}
+	return {
+		tile: 'bg-surface-amber-2',
+		icon: 'lucide-file-text text-ink-amber-7',
+	}
 }
 
 const statusText = (source: Source) => {

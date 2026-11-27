@@ -22,6 +22,12 @@ class OutcomeOption(BaseModel):
 	outcome: str = Field(description="What people should be able to do, two to four short sentences")
 
 
+class FoundPage(BaseModel):
+	title: str
+	url: str = Field(description="The address exactly as web_search returned it")
+	why: str = Field(description="Why it fits, in three to eight words")
+
+
 class Point(BaseModel):
 	heading: str
 	body: str
@@ -329,6 +335,21 @@ def save_suggested_outcome(
 
 	offer(goal, ctx.session_id, [option.model_dump() for option in options])
 	return _("Suggested.")
+
+
+@tool
+def offer_material(
+	goal: Annotated[str, "The LMS Goal name"],
+	pages: Annotated[list[FoundPage], "Five to eight pages from web_search, or none when nothing fits"],
+	*,
+	ctx: ToolContext,
+) -> str:
+	"""Offer the admin web pages to pick from; nothing is added until they choose."""
+	_require_admin(ctx.user)
+	from lms.lms.ai.find_material import offer
+
+	offer(goal, ctx.session_id, [page.model_dump() for page in pages])
+	return _("Offered.")
 
 
 @tool

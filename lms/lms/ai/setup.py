@@ -21,6 +21,7 @@ GRADER = "lms/Learning Grader"
 READINESS = "lms/Learning Readiness Assistant"
 TUTOR = "lms/Learning Tutor"
 OUTCOME_WRITER = "lms/Learning Outcome Writer"
+MATERIAL_FINDER = "lms/Learning Material Finder"
 
 
 def _title(agent: str) -> str:
@@ -144,13 +145,37 @@ def ensure_agents() -> None:
 			),
 			ADMIN_ROLES,
 		),
+		(
+			Agent(
+				name=_title(MATERIAL_FINDER),
+				model=model,
+				description="Finds web pages to teach a skill from, for the admin to pick.",
+				instructions=prompts.MATERIAL_FINDER,
+				tools=[tools.offer_material],
+				max_iterations=6,
+				auto_approve=True,
+			),
+			ADMIN_ROLES,
+		),
 	]
 	for agent, roles in definitions:
 		agent.sync()
 		doc = frappe.get_doc("Flow Agent", agent.name)
 		doc.set("roles", [{"role": role} for role in roles])
+		if agent.name == MATERIAL_FINDER:
+			_allow_web_search(doc)
 		# nosemgrep: lms-unjustified-ignore-permissions - agents are set up by the system at migrate and on first use
 		doc.save(ignore_permissions=True)
+
+
+def _allow_web_search(doc) -> None:
+	"""Flow's own web search runs on the Flow server, so it is attached by name, not as an app tool.
+	The agent's sync resets its tools, so this runs after every sync."""
+	from frappe.flow.tools.builtins import builtin_name
+
+	search = builtin_name("web_search")
+	if frappe.db.exists("Flow Tool", search) and not any(row.tool == search for row in doc.tools):
+		doc.append("tools", {"tool": search})
 
 
 def ensure_learner_access() -> None:

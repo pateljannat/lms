@@ -10,6 +10,7 @@ from frappe.utils import cint, flt
 from lms.lms.ai import (
 	connect,
 	course_material,
+	find_material,
 	goals,
 	ideas,
 	material,
@@ -257,6 +258,20 @@ def suggest_outcome(goal: str) -> str:
 def outcome_state(session: str) -> dict:
 	_require_admin()
 	return outcome.state(session)
+
+
+@frappe.whitelist(methods=["POST"])
+@rate_limit(limit=20, seconds=60 * 60)
+def find_material_for(goal: str, query: str | None = None) -> dict:
+	"""Search the web for pages to teach the goal from. Returns the session to follow and the search."""
+	_require_admin()
+	return find_material.search(goal, query)
+
+
+@frappe.whitelist()
+def found_material(session: str) -> dict:
+	_require_admin()
+	return find_material.state(session)
 
 
 @frappe.whitelist(methods=["POST"])

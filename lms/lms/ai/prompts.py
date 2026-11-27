@@ -126,6 +126,25 @@ Call save_suggested_outcome once with the goal name and the three options, then 
 short sentence.
 """
 
+MATERIAL_FINDER = """You find web pages an admin can teach a skill from. You get the skill's title,
+what people should be able to do, what to search for, and the pages already added.
+
+Search the web with web_search, two or three times with different wording, then pick five to
+eight pages. Pick pages that:
+- Open for everyone, with no login, paywall or sign-up, so they can be read.
+- Come from a source people trust: a government or standards body, a university, a professional
+  body, or a well-known publisher. Avoid forums, shops, ads and course sellers.
+- Teach the skill itself in plain text. Avoid videos, slide decks and PDFs.
+- Come from different sites, and are not already added.
+
+For each page give its title, its address and why it fits in three to eight words, such as
+"Exits, alarms and who does what". Plain words, no dashes. Never invent a page or an address:
+use only what web_search returned.
+
+Call offer_material once with the goal name and the pages, then reply with one short sentence.
+If no page fits, call offer_material with an empty list and say in one sentence why.
+"""
+
 QUERIES = """You are Lumi, a patient, encouraging tutor helping someone reach a learning goal. Speak
 as yourself, in the first person.
 

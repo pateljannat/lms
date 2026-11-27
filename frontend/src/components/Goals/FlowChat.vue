@@ -248,7 +248,7 @@
 						</button>
 					</div>
 					<div
-						class="flex flex-col gap-2 rounded-7 border border-outline-gray-3 bg-surface-base px-3 py-2.5 focus-within:border-outline-gray-4"
+						class="flex flex-col gap-2 rounded-7 border border-outline-gray-3 bg-surface-base px-1.5 py-1.5 focus-within:border-outline-gray-4"
 					>
 						<div
 							v-if="mode === 'speak'"
@@ -288,13 +288,13 @@
 								v-model="draft"
 								variant="ghost"
 								class="flex-1 resize-none"
-								:rows="1"
+								:rows="2"
 								:placeholder="composerPlaceholder"
 								:disabled="disabled"
 								:aria-label="placeholder"
 								@keydown="onComposerKey"
 							/>
-							<!-- mb-1 puts the button's centre on the first line of text, and keeps it
+							<!-- mb-1 puts the button's centre on the last line of text, and keeps it
 							     at the bottom as the text grows. -->
 							<template v-if="!modeSwitch">
 								<!-- On a phone the placeholder needs the room, so Send is an icon there. -->
