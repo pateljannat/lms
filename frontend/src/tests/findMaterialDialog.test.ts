@@ -73,7 +73,7 @@ describe('Find material', () => {
 		expect((wrapper.find('input.query').element as HTMLInputElement).value).toBe(
 			'Leave calmly when the alarm sounds'
 		)
-		vi.advanceTimersByTime(2500)
+		vi.advanceTimersByTime(1000)
 		await flushPromises()
 
 		const boxes = wrapper.findAll('input[type="checkbox"]').map((box) => box.element as HTMLInputElement)
@@ -85,7 +85,7 @@ describe('Find material', () => {
 
 	it('adds each ticked page the way Add a link does, then closes', async () => {
 		const wrapper = await openDialog()
-		vi.advanceTimersByTime(2500)
+		vi.advanceTimersByTime(1000)
 		await flushPromises()
 		await wrapper.findAll('input[type="checkbox"]')[1].setValue(false)
 		await wrapper.find('button.add').trigger('click')
@@ -105,7 +105,7 @@ describe('Find material', () => {
 			return [{ title: args.url }]
 		})
 		const wrapper = await openDialog()
-		vi.advanceTimersByTime(2500)
+		vi.advanceTimersByTime(1000)
 		await flushPromises()
 		await wrapper.find('button.add').trigger('click')
 		await flushPromises()

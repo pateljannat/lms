@@ -11,7 +11,7 @@ from lms.lms.ai import material, setup
 FOUND = "lms_goal_found_material:{session}"
 MAX_PAGES = 8
 # A page that opens for everyone answers within this, or the admin is not offered it.
-CHECK_SECONDS = 8
+CHECK_SECONDS = 5
 LOGIN_WORDS = ("login", "signin", "sign-in", "signup", "sign-up", "auth", "subscribe")
 
 

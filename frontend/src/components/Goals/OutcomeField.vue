@@ -34,43 +34,83 @@
 						{{ __('Suggest from my material') }}
 					</button>
 				</template>
-				<div class="w-[22rem] max-w-[calc(100vw-2rem)] p-1">
-					<!-- The wait looks like what arrives: three suggestions, each a short angle and two lines. -->
-					<div v-if="suggesting" class="flex flex-col gap-1" :aria-busy="true">
+				<div class="w-[26rem] max-w-[calc(100vw-2rem)] p-1">
+					<!-- The wait looks like what arrives: one suggestion, an angle and a few lines. -->
+					<div v-if="suggesting" class="flex flex-col gap-2" :aria-busy="true">
 						<div
 							class="flex items-center gap-2 px-2.5 pb-1 pt-1.5 text-p-xs text-ink-gray-6"
 						>
 							<LoadingIndicator class="size-3.5" />
 							{{ __('Reading your material. About twenty seconds.') }}
 						</div>
-						<div
-							v-for="n in 3"
-							:key="n"
-							class="flex flex-col gap-2 px-2.5 py-2"
-						>
+						<div class="flex flex-col gap-2 px-2.5 py-2">
 							<div
 								class="h-2.5 w-1/3 animate-pulse rounded bg-surface-gray-2"
 							/>
 							<div class="h-3 w-full animate-pulse rounded bg-surface-gray-1" />
-							<div class="h-3 w-4/5 animate-pulse rounded bg-surface-gray-1" />
+							<div class="h-3 w-full animate-pulse rounded bg-surface-gray-1" />
+							<div class="h-3 w-3/5 animate-pulse rounded bg-surface-gray-1" />
 						</div>
 					</div>
-					<ul v-else-if="options.length" class="flex flex-col">
-						<li v-for="option in options" :key="option.label">
-							<button
-								type="button"
-								class="block w-full rounded-5 px-2.5 py-2 text-start hover:bg-surface-gray-2 focus-visible:bg-surface-gray-2 focus-visible:outline-none"
-								@click="pick(option)"
+					<!-- One suggestion at a time, in full, so each can be read before it is used. -->
+					<div
+						v-else-if="current"
+						class="flex flex-col gap-2 px-2.5 pb-1 pt-1.5"
+						role="group"
+						:aria-label="__('Suggestions')"
+						@keydown.left.prevent="move(-1)"
+						@keydown.right.prevent="move(1)"
+					>
+						<span class="text-p-xs text-ink-gray-6">{{ current.label }}</span>
+						<p class="text-p-sm text-ink-gray-8" aria-live="polite">
+							{{ current.outcome }}
+						</p>
+						<div
+							v-if="options.length > 1"
+							class="flex items-center justify-center gap-2 pt-1"
+						>
+							<Button
+								size="sm"
+								variant="ghost"
+								:aria-label="__('Previous suggestion')"
+								:disabled="shown === 0"
+								@click="move(-1)"
 							>
-								<span class="block text-p-xs text-ink-gray-6">
-									{{ option.label }}
-								</span>
-								<span class="mt-0.5 line-clamp-2 text-p-sm text-ink-gray-8">
-									{{ option.outcome }}
-								</span>
-							</button>
-						</li>
-					</ul>
+								<template #icon>
+									<span class="lucide-chevron-left size-4 text-ink-gray-7" />
+								</template>
+							</Button>
+							<div class="flex items-center gap-1">
+								<button
+									v-for="(option, i) in options"
+									:key="option.label"
+									type="button"
+									class="flex size-4 items-center justify-center rounded-full"
+									:aria-label="option.label"
+									:aria-current="i === shown"
+									@click="shown = i"
+								>
+									<span
+										class="size-1.5 rounded-full"
+										:class="
+											i === shown ? 'bg-surface-gray-7' : 'bg-surface-gray-4'
+										"
+									/>
+								</button>
+							</div>
+							<Button
+								size="sm"
+								variant="ghost"
+								:aria-label="__('Next suggestion')"
+								:disabled="shown === options.length - 1"
+								@click="move(1)"
+							>
+								<template #icon>
+									<span class="lucide-chevron-right size-4 text-ink-gray-7" />
+								</template>
+							</Button>
+						</div>
+					</div>
 					<ErrorMessage
 						v-else-if="error"
 						class="px-2.5 py-2"
@@ -85,7 +125,7 @@
 					</p>
 					<div
 						v-if="!suggesting"
-						class="mt-1 flex justify-end border-t border-outline-gray-1 pt-1"
+						class="mt-1 flex items-center justify-between border-t border-outline-gray-1 pt-1"
 					>
 						<Button
 							size="sm"
@@ -95,6 +135,14 @@
 						>
 							{{ __('Refresh') }}
 						</Button>
+						<Button
+							v-if="current"
+							size="sm"
+							variant="solid"
+							@click="pick(current)"
+						>
+							{{ __('Use this') }}
+						</Button>
 					</div>
 				</div>
 			</Popover>
@@ -103,7 +151,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import {
 	Button,
 	call,
@@ -174,6 +222,17 @@ const suggest = async () => {
 const suggestOnce = () => {
 	// A failure stays on screen until Refresh; it is not retried on every open.
 	if (!options.value.length && !error.value && !suggesting.value) suggest()
+}
+
+// Which suggestion is on screen; a fresh set starts again at the first.
+const shown = ref(0)
+const current = computed(() => options.value[shown.value])
+watch(options, () => (shown.value = 0))
+const move = (step: number) => {
+	shown.value = Math.min(
+		Math.max(shown.value + step, 0),
+		options.value.length - 1
+	)
 }
 
 // The chosen option goes into the box and is saved, so the admin edits it like their own words.

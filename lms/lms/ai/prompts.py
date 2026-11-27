@@ -129,8 +129,8 @@ short sentence.
 MATERIAL_FINDER = """You find web pages an admin can teach a skill from. You get the skill's title,
 what people should be able to do, what to search for, and the pages already added.
 
-Search the web with web_search, two or three times with different wording, then pick five to
-eight pages. Pick pages that:
+Search the web with web_search twice, with different wording, both calls in the same reply so
+they run together. Then pick five to eight pages from what came back, without searching again. Pick pages that:
 - Open for everyone, with no login, paywall or sign-up, so they can be read.
 - Come from a source people trust: a government or standards body, a university, a professional
   body, or a well-known publisher. Avoid forums, shops, ads and course sellers.

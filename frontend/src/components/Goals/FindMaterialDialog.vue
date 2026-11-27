@@ -24,11 +24,21 @@
 					:aria-busy="true"
 					:aria-label="__('Searching the web')"
 				>
-					<li v-for="row in 4" :key="row" class="flex items-center gap-2.5 py-2">
-						<div class="size-8 shrink-0 animate-pulse rounded-6 bg-surface-gray-2" />
+					<li
+						v-for="row in 4"
+						:key="row"
+						class="flex items-center gap-2.5 py-2"
+					>
+						<div
+							class="size-8 shrink-0 animate-pulse rounded-6 bg-surface-gray-2"
+						/>
 						<div class="flex flex-1 flex-col gap-1.5">
-							<div class="h-3 w-2/3 animate-pulse rounded-4 bg-surface-gray-2" />
-							<div class="h-3 w-1/3 animate-pulse rounded-4 bg-surface-gray-2" />
+							<div
+								class="h-3 w-2/3 animate-pulse rounded-4 bg-surface-gray-2"
+							/>
+							<div
+								class="h-3 w-1/3 animate-pulse rounded-4 bg-surface-gray-2"
+							/>
 						</div>
 					</li>
 				</ul>
@@ -51,7 +61,9 @@
 							/>
 							<span
 								class="flex size-8 shrink-0 items-center justify-center rounded-6"
-								:class="page.readable ? 'bg-surface-blue-2' : 'bg-surface-gray-2'"
+								:class="
+									page.readable ? 'bg-surface-blue-2' : 'bg-surface-gray-2'
+								"
 								aria-hidden="true"
 							>
 								<span
@@ -67,7 +79,11 @@
 									{{ page.title }}
 								</span>
 								<span class="block truncate text-p-xs text-ink-gray-6">
-									{{ [page.site, page.problem || page.why].filter(Boolean).join(' · ') }}
+									{{
+										[page.site, page.problem || page.why]
+											.filter(Boolean)
+											.join(' · ')
+									}}
 								</span>
 							</span>
 						</label>
@@ -78,7 +94,10 @@
 			</div>
 		</template>
 		<template #actions>
-			<p v-if="pages.length" class="me-auto self-center text-p-sm text-ink-gray-6">
+			<p
+				v-if="pages.length"
+				class="me-auto self-center text-p-sm text-ink-gray-6"
+			>
 				{{ __('Lumi teaches from the pages you tick') }}
 			</p>
 			<HeaderButton
@@ -172,7 +191,7 @@ const search = async () => {
 					.slice(0, 3)
 					.map((page) => page.url)
 			)
-		}, 2500)
+		}, 1000)
 	} catch (err) {
 		searching.value = false
 		error.value = (err as Error).message
@@ -195,7 +214,10 @@ const add = async () => {
 	try {
 		const goal = await ensureGoal()
 		for (const url of picked.value) {
-			sources = (await call('lms.lms.ai.api.add_url', { goal, url })) as unknown[]
+			sources = (await call('lms.lms.ai.api.add_url', {
+				goal,
+				url,
+			})) as unknown[]
 			pick(pages.value.find((page) => page.url === url)!, false)
 		}
 		emit('added', sources || [])

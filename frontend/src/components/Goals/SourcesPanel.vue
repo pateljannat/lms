@@ -3,13 +3,10 @@
 	     own padding already add space, so the section pads only the rest. -->
 	<section
 		class="-mx-4 border-y border-outline-gray-1 px-4 pt-3 sm:-mx-6 sm:px-6"
-		:class="sources.length ? 'pb-3.5' : 'pb-4'"
+		:class="sources.length ? 'pb-3' : 'pb-4'"
 	>
 		<!-- Rows bring their own padding; plain text under the heading needs the gap. -->
-		<div
-			class="flex items-center gap-2"
-			:class="sources.length ? 'mb-1.5' : 'mb-1'"
-		>
+		<div class="mb-1 flex items-center gap-2">
 			<h3 class="flex-1 text-p-sm font-semibold text-ink-gray-7">
 				{{ __('Material') }}
 			</h3>
@@ -75,8 +72,8 @@
 			}}
 		</p>
 		<!-- A row is not clickable, so it gets no hover fill; hover only reveals Remove. -->
-		<ul v-else class="space-y-1">
-			<li v-for="source in sources" :key="source.title" class="group py-0.5">
+		<ul v-else class="space-y-2">
+			<li v-for="source in sources" :key="source.title" class="group py-1">
 				<div class="flex items-center gap-2.5">
 					<!-- The tile's colour says what kind of material it is: page, course or file. -->
 					<span
@@ -87,7 +84,17 @@
 						<span class="size-4" :class="kindOf(source).icon" />
 					</span>
 					<div class="min-w-0 flex-1">
-						<div class="truncate text-p-sm text-ink-gray-8">
+						<!-- Each kind opens where it lives, in a new tab: the page, the course, the file. -->
+						<a
+							v-if="linkOf(source)"
+							:href="safeUrl(linkOf(source))"
+							v-external
+							class="block truncate text-p-sm text-ink-gray-8 underline-offset-2 hover:underline"
+							:aria-label="__('Open {0} in a new tab').format(source.title)"
+						>
+							{{ source.title }}
+						</a>
+						<div v-else class="truncate text-p-sm text-ink-gray-8">
 							{{ source.title }}
 						</div>
 						<!-- What it is and how much was read, under the name, so the row's end stays free. -->
@@ -185,6 +192,8 @@ import AddCourseDialog from '@/components/Goals/AddCourseDialog.vue'
 import AddLinkDialog from '@/components/Goals/AddLinkDialog.vue'
 import FindMaterialDialog from '@/components/Goals/FindMaterialDialog.vue'
 import { createDialog } from '@/utils/dialogs'
+import { getLmsRoute } from '@/utils/basePath'
+import { safeUrl } from '@/utils/safeUrl'
 
 interface Source {
 	title: string
@@ -288,6 +297,12 @@ const captionsNote = (source: Source) => {
 	return count === 1
 		? __('1 video could not be read')
 		: __('{0} videos could not be read').format(count)
+}
+
+const linkOf = (source: Source): string | undefined => {
+	if (source.url) return source.url
+	if (source.course) return getLmsRoute(`courses/${source.course}`)
+	return props.files[source.title] || undefined
 }
 
 // Web pages blue, courses green, uploaded files amber, so each kind reads at a glance.

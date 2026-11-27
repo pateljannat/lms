@@ -139,13 +139,33 @@
 									<GoalSettings :goal="goal" @change="save()" />
 								</TabPanel>
 								<TabPanel value="plan">
-									<!-- While Lumi drafts, the plan's shape shows where the parts will land, and the
-									     drafter's steps appear below it as they happen. -->
+									<!-- While Lumi drafts a first plan, the plan's shape shows where the parts will
+									     land, and the drafter's steps appear below it as they happen. A rebuild keeps
+									     the current plan on screen, faded, until the new one replaces it. -->
 									<div
 										v-if="goal.status === 'Drafting' && goal.drafting_session"
 										class="pt-4"
 									>
-										<div class="flex items-start gap-2.5">
+										<div
+											v-if="rebuilding"
+											class="flex items-start gap-2.5 rounded-6 bg-surface-gray-2 px-3 py-2.5"
+											role="status"
+										>
+											<LoadingIndicator class="mt-0.5 size-4 shrink-0" />
+											<div>
+												<div class="text-base-medium text-ink-gray-9">
+													{{ __('Rebuilding your plan') }}
+												</div>
+												<div class="text-p-xs text-ink-gray-6">
+													{{
+														__(
+															'Your current plan stays until the new one is ready.'
+														)
+													}}
+												</div>
+											</div>
+										</div>
+										<div v-else class="flex items-start gap-2.5" role="status">
 											<LoadingIndicator class="mt-0.5 size-4 shrink-0" />
 											<div>
 												<div class="text-base-medium text-ink-gray-9">
@@ -184,6 +204,7 @@
 											</li>
 										</ul>
 										<FlowChat
+											v-if="!rebuilding"
 											class="mt-4"
 											:session="goal.drafting_session"
 											:assistant-name="__('AI')"
@@ -192,7 +213,15 @@
 											read-only
 										/>
 									</div>
-									<template v-if="goal.activities.length">
+									<div
+										v-if="goal.activities.length"
+										:inert="rebuilding"
+										:class="
+											rebuilding
+												? 'pointer-events-none select-none opacity-50'
+												: ''
+										"
+									>
 										<p class="pt-4 text-p-base text-ink-gray-6">
 											{{
 												__('{0} parts · about {1} minutes').format(
@@ -232,7 +261,7 @@
 												/>
 											</template>
 										</Draggable>
-									</template>
+									</div>
 								</TabPanel>
 							</Tabs>
 						</div>
@@ -436,6 +465,14 @@ const load = async () => {
 	if (data.title === UNTITLED) data.title = ''
 	goal.value = data
 }
+
+// A plan is being drafted over one that exists: the old one stays on screen, faded, until then.
+const rebuilding = computed(
+	() =>
+		goal.value?.status === 'Drafting' &&
+		!!goal.value?.drafting_session &&
+		!!goal.value?.activities?.length
+)
 
 const reading = computed(() =>
 	(goal.value?.sources || []).some(
